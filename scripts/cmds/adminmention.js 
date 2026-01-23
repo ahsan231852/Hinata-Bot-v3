@@ -1,0 +1,63 @@
+ module.exports = {
+  config: {
+    name: "adminmention",
+    version: "2.1.5",
+    author: "SO JI B BBY",
+    countDown: 0,
+    role: 0,
+    shortDescription: "অ্যাডমিনকে মেনশন করলে বা রিপ্লাই দিলে অটো রিপ্লাই",
+    longDescription: "অ্যাডমিনকে মেনশন করলে অথবা অ্যাডমিনের মেসেজে রিপ্লাই দিলে বট অটোমেটিক রাগী উত্তর দেবে।",
+    category: "fun"
+  },
+
+  // এই ফাংশনটি খালি থাকলেও থাকতে হবে যাতে এরর না আসে
+  onStart: async function ({ api, event }) {
+    return api.sendMessage("This command works automatically when you mention an admin!", event.threadID, event.messageID);
+  },
+
+  // আসল কাজ হবে এখানে
+  onChat: async function ({ event, api, message }) {
+    const { senderID, mentions, type, messageReply } = event;
+
+    // ১. আপনার অ্যাডমিন আইডি
+    const adminIDs = ["61585261020263"];
+
+    // ২. অ্যাডমিন নিজে মেসেজ দিলে বট কিছু বলবে না
+    if (adminIDs.includes(String(senderID))) return;
+
+    let isTargeted = false;
+
+    // ৩. নতুন মেনশন ডিটেকশন সিস্টেম
+    if (mentions && Object.keys(mentions).length > 0) {
+      const mentionedIDs = Object.keys(mentions).map(String);
+      if (adminIDs.some(adminID => mentionedIDs.includes(adminID))) {
+        isTargeted = true;
+      }
+    }
+
+    // ৪. রিপ্লাই ডিটেকশন (অ্যাডমিনের মেসেজে রিপ্লাই দিলে)
+    if (!isTargeted && type === "message_reply" && messageReply) {
+      if (adminIDs.includes(String(messageReply.senderID))) {
+        isTargeted = true;
+      }
+    }
+
+    // ৫. যদি টার্গেট ম্যাচ করে
+    if (isTargeted) {
+      const REPLIES = [
+        "ওরে মেনশন দিস না বস এখন  ভাবির চিপায় আছে 😩",
+        "বস এক আবাল তুমারে ডাকতেছে 😂😏",
+        "বুকাচুদা তুই মেনশন দিবি না আমার বস রে 🥹",
+        "মেনশন দিছস আর বেচে যাবি? দারা বলতাছি 😠",
+        "Boss এখন বিজি আছে 😌🥱"
+      ];
+
+      const randomReply = REPLIES[Math.floor(Math.random() * REPLIES.length)];
+
+      // রাগী রিয়েকশন
+      api.setMessageReaction("😡", event.messageID, () => {}, true);
+
+      return message.reply(randomReply);
+    }
+  }
+};
