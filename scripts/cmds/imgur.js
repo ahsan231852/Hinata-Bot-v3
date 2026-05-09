@@ -1,15 +1,15 @@
 const axios = require("axios");
 
-const getBase = async () => {
-        const res = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
-        return res.data.mahmud;
+const baseApiUrl = async () => {
+        const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
+        return base.data.mahmud;
 };
 
 module.exports = {
         config: {
                 name: "imgur",
                 aliases: ["i"],
-                version: "1.7",
+                version: "1.8",
                 author: "MahMUD",
                 countDown: 10,
                 role: 0,
@@ -28,19 +28,16 @@ module.exports = {
 
         langs: {
                 bn: {
-                        noMedia: "🐤 | বেবি, একটি ছবি বা ভিডিওতে রিপ্লাই দাও! 🖼️",
-                        success: "%1",
-                        error: "× সমস্যা হয়েছে: %1। প্রয়োজনে Contact MahMUD।"
+                        noMedia: "× বেবি, একটি ছবি বা ভিডিওতে রিপ্লাই দাও!",
+                        error: "× সমস্যা হয়েছে: %1। প্রয়োজনে Contact MahMUD|\n•WhatsApp: 01836298139"
                 },
                 en: {
-                        noMedia: "🐤 | Baby, please reply to a media file (image/video)! 🖼️",
-                        success: "%1",
-                        error: "× API error: %1. Contact MahMUD for help."
+                        noMedia: "× Baby, please reply to a media file!",
+                        error: "× API error: %1. Contact MahMUD for help.\n•WhatsApp: 01836298139"
                 },
                 vi: {
-                        noMedia: "🐤 | Cưng ơi, vui lòng phản hồi một tệp phương tiện! 🖼️",
-                        success: "%1",
-                        error: "× Lỗi: %1. Liên hệ MahMUD để hỗ trợ."
+                        noMedia: "× Cưng ơi, hãy phản hồi một tệp phương tiện!",
+                        error: "× Lỗi: %1. Liên hệ MahMUD để hỗ trợ.\n•WhatsApp: 01836298139"
                 }
         },
 
@@ -55,28 +52,27 @@ module.exports = {
                 }
 
                 try {
-                        api.setMessageReaction("⌛", event.messageID, () => {}, true);
+                        api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
-                        const attachmentUrl = encodeURIComponent(event.messageReply.attachments[0].url);
-                        const baseUrl = await getBase();
-                        const apiUrl = `${baseUrl.replace(/\/$/, "")}/api/imgur?url=${attachmentUrl}`;
+                        const attachmentUrl = event.messageReply.attachments[0].url;
+                        const baseUrl = await baseApiUrl();
+                        
+                        const response = await axios.get(`${baseUrl}/api/imgur`, {
+                                params: {
+                                        url: attachmentUrl
+                                }
+                        });
 
-                        const response = await axios.get(apiUrl, { timeout: 100000 });
+                        const replyLink = response.data.link || "No link received.";
+                        api.setMessageReaction("✅", event.messageID, () => {}, true);
 
-                        if (response.data.status && response.data.link) {
-                                return message.reply({
-                                        body: getLang("success", response.data.link)
-                                }, () => {
-                                        api.setMessageReaction("✅", event.messageID, () => {}, true);
-                                });
-                        } else {
-                                throw new Error("Imgur API response status false.");
-                        }
+                        return message.reply(replyLink);
 
                 } catch (err) {
                         console.error("Imgur Error:", err);
                         api.setMessageReaction("❌", event.messageID, () => {}, true);
-                        return message.reply(getLang("error", err.message));
+                        const errorMsg = err.response?.data?.error || err.message;
+                        return message.reply(getLang("error", errorMsg));
                 }
         }
 };
