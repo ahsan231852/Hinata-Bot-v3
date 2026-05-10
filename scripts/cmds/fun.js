@@ -37,21 +37,21 @@ module.exports = {
                         listErr: "× ইফেক্ট লিস্ট আনতে সমস্যা হয়েছে।",
                         noTarget: "× বেবি, কাউকে মেনশন দাও, রিপ্লাই করো অথবা UID দাও! 🎭",
                         success: "✅ Effect: %1 সফল হয়েছে! 💥",
-                        error: "× সমস্যা হয়েছে: %1। প্রয়োজনে Contact MahMUD।"
+                        error: "× সমস্যা হয়েছে: %1। প্রয়োজনে Contact MahMUD।\n•WhatsApp: 01836298139"
                 },
                 en: {
                         noType: "× Baby, provide an effect type! Use '{pn} list' to see all.",
                         listErr: "× Failed to fetch effect list.",
                         noTarget: "× Baby, mention, reply, or provide UID of the target! 🎭",
                         success: "✅ Effect: %1 successful! 💥",
-                        error: "× API error: %1. Contact MahMUD for help."
+                        error: "× API error: %1. Contact MahMUD for help.\n•WhatsApp: 01836298139"
                 },
                 vi: {
                         noType: "× Cưng ơi, hãy nhập loại hiệu ứng! Sử dụng '{pn} list' để xem tất cả.",
                         listErr: "× Không thể tải danh sách hiệu ứng.",
                         noTarget: "× Cưng ơi, hãy gắn thẻ, phản hồi hoặc cung cấp UID! 🎭",
                         success: "✅ Hiệu ứng: %1 thành công! 💥",
-                        error: "× Lỗi: %1. Liên hệ MahMUD để hỗ trợ."
+                        error: "× Lỗi: %1. Liên hệ MahMUD để hỗ trợ.\n•WhatsApp: 01836298139"
                 }
         },
 
