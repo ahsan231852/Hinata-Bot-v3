@@ -30,19 +30,19 @@ module.exports = {
                         noInput: "× বেবি, একটি দেশের নাম তো দাও! 🚩",
                         title: ">🎀 বেবি, এই নাও তোমার %1 দেশের তথ্য\n\n",
                         notFound: "× \"%1\" দেশের তথ্য খুঁজে পাওয়া যায়নি। প্রয়োজনে Contact MahMUD।",
-                        error: "× সমস্যা হয়েছে: %1। প্রয়োজনে Contact MahMUD।"
+                        error: "× সমস্যা হয়েছে: %1। প্রয়োজনে Contact MahMUD।\n•WhatsApp: 01836298139"
                 },
                 en: {
                         noInput: "× Baby, please provide a country name! 🚩",
                         title: ">🎀 Baby, Here's your %1 Country Information\n\n",
                         notFound: "× Could not find info for \"%1\". Contact MahMUD for help.",
-                        error: "× API error: %1. Contact MahMUD for help."
+                        error: "× API error: %1. Contact MahMUD for help.\n•WhatsApp: 01836298139"
                 },
                 vi: {
                         noInput: "× Cưng ơi, vui lòng cung cấp tên quốc gia! 🚩",
                         title: ">🎀 Cưng ơi, đây là thông tin về %1 nè\n\n",
                         notFound: "× Không tìm thấy thông tin cho \"%1\". Liên hệ MahMUD.",
-                        error: "× Lỗi: %1. Liên hệ MahMUD để hỗ trợ."
+                        error: "× Lỗi: %1. Liên hệ MahMUD để hỗ trợ.\n•WhatsApp: 01836298139"
                 }
         },
 
