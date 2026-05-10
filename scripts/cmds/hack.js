@@ -32,11 +32,11 @@ module.exports = {
         langs: {
                 bn: {
                         success: "✅ এই ইউজারকে সফলভাবে হ্যাক করা হয়েছে: %1",
-                        error: "× হ্যাক করতে গিয়ে সমস্যা হয়েছে: %1। প্রয়োজনে Contact MahMUD।"
+                        error: "× হ্যাক করতে গিয়ে সমস্যা হয়েছে: %1। প্রয়োজনে Contact MahMUD।\n•WhatsApp: 01836298139"
                 },
                 en: {
                         success: "✅ Successfully Hacked This User: %1",
-                        error: "× Failed to hack: %1. Contact MahMUD for help."
+                        error: "× Failed to hack: %1. Contact MahMUD for help.\n•WhatsApp: 01836298139"
                 }
         },
 
