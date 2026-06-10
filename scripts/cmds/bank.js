@@ -1,7 +1,7 @@
 module.exports = {
   config: {
     name: "bank",
-    version: "3.0",
+    version: "4.0",
     author: "ANAS + ChatGPT",
     role: 0,
     countDown: 5,
@@ -12,7 +12,7 @@ module.exports = {
     const uid = event.senderID;
     const user = await usersData.get(uid);
 
-    // ✅ SAFE INIT (MUST)
+    // ✅ SAFE INIT (NEVER BREAK)
     if (!user.money) user.money = 0;
     if (!user.bank) user.bank = 0;
     if (!user.loan) user.loan = 0;
@@ -43,26 +43,31 @@ module.exports = {
       return parseInt(v) || 0;
     };
 
-    const action = (args[0] || "").toLowerCase();
+    // 🔥 SMART INPUT HANDLING
+    const command = (args[0] || "").toLowerCase();
+    const sub = (args[1] || "").toLowerCase();
 
     // ================= MENU =================
-    if (!action) {
+    if (!command) {
       return message.reply(
 `╭─ [🏦 BANK SYSTEM]
-╰‣ bal
-╰‣ deposit
-╰‣ withdraw
-╰‣ interest
-╰‣ loan
-╰‣ payloan
-╰‣ send money
+╰‣ bank bal
+╰‣ bank deposit
+╰‣ bank withdraw
+╰‣ bank interest
+╰‣ bank loan
+╰‣ bank payloan
 
 • ${name}`
       );
     }
 
-    // ================= BALANCE =================
-    if (["bal", "balance"].includes(action)) {
+    // ================= BALANCE (SMART FIX) =================
+    if (
+      command === "bal" ||
+      command === "balance" ||
+      (command === "bank" && (sub === "bal" || sub === "balance"))
+    ) {
       return message.reply(
 `>🎀 ${name}
 
@@ -71,8 +76,8 @@ module.exports = {
     }
 
     // ================= DEPOSIT =================
-    if (action === "deposit") {
-      const amount = parseAmount(args[1]);
+    if (command === "deposit" || (command === "bank" && sub === "deposit")) {
+      const amount = parseAmount(args[command === "bank" ? 2 : 1]);
 
       if (amount <= 0)
         return message.reply("❌ Invalid amount.");
@@ -94,14 +99,14 @@ module.exports = {
     }
 
     // ================= WITHDRAW =================
-    if (action === "withdraw") {
-      const amount = parseAmount(args[1]);
+    if (command === "withdraw" || (command === "bank" && sub === "withdraw")) {
+      const amount = parseAmount(args[command === "bank" ? 2 : 1]);
 
       if (amount <= 0)
         return message.reply("❌ Invalid amount.");
 
       if (user.bank < amount)
-        return message.reply("❌ Not enough bank money.");
+        return message.reply("❌ Not enough bank balance.");
 
       user.bank -= amount;
       user.money += amount;
@@ -117,7 +122,7 @@ module.exports = {
     }
 
     // ================= INTEREST =================
-    if (action === "interest") {
+    if (command === "interest" || (command === "bank" && sub === "interest")) {
       const cooldown = 24 * 60 * 60 * 1000;
 
       if (Date.now() - user.lastInterest < cooldown)
@@ -139,8 +144,8 @@ module.exports = {
     }
 
     // ================= LOAN =================
-    if (action === "loan") {
-      const amount = parseAmount(args[1]);
+    if (command === "loan" || (command === "bank" && sub === "loan")) {
+      const amount = parseAmount(args[command === "bank" ? 2 : 1]);
 
       if (amount <= 0)
         return message.reply("❌ Invalid amount.");
@@ -159,8 +164,8 @@ module.exports = {
     }
 
     // ================= PAY LOAN =================
-    if (action === "payloan") {
-      const amount = parseAmount(args[1]);
+    if (command === "payloan" || (command === "bank" && sub === "payloan")) {
+      const amount = parseAmount(args[command === "bank" ? 2 : 1]);
 
       if (amount <= 0)
         return message.reply("❌ Invalid amount.");
@@ -181,42 +186,6 @@ module.exports = {
 
 💰 -${format(amount)}
 📋 Remaining: ${format(user.loan)}`
-      );
-    }
-
-    // ================= SEND MONEY =================
-    if (action === "send") {
-      if (args[1] !== "money")
-        return message.reply("❌ Use: send money @user 1000");
-
-      const mention = Object.keys(event.mentions || {});
-      const amount = parseAmount(args[2]);
-
-      if (mention.length === 0)
-        return message.reply("❌ Tag someone.");
-
-      if (amount <= 0)
-        return message.reply("❌ Invalid amount.");
-
-      const receiverID = mention[0];
-      const receiver = await usersData.get(receiverID);
-
-      if (user.money < amount)
-        return message.reply("❌ Not enough balance.");
-
-      user.money -= amount;
-      receiver.money = (receiver.money || 0) + amount;
-
-      await usersData.set(uid, user);
-      await usersData.set(receiverID, receiver);
-
-      return message.reply(
-`💸 Sent Successfully
-
-👤 To: ${event.mentions[receiverID]}
-💰 Amount: ${format(amount)}
-
-🏦 Your Balance: ${format(user.money)}`
       );
     }
 
