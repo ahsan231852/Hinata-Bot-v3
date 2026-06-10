@@ -129,13 +129,4 @@ module.exports = {
                 }
         }
 };
-let user = await usersData.get(event.senderID);
 
-if (!user.dailyMission) {
-  user.dailyMission = { date: "", progress: {}, completed: [], claimed: false };
-}
-
-const game = "animalgame";
-
-user.dailyMission.progress[game] =
-  (user.dailyMission.progress[game] || 0) + 1;
