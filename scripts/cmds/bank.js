@@ -1,19 +1,22 @@
 module.exports = {
   config: {
     name: "bank",
-    version: "1.0",
+    version: "1.1",
     author: "ANAS",
     role: 0,
     countDown: 5,
     category: "economy",
     guide: {
-      en: "{pn} | balance | deposit <amount> | withdraw <amount> | interest | loan <amount> | payloan <amount>"
+      en: "{pn} | balance | deposit <amount> | withdraw <amount> | interest | loan <amount> | payloan <amount> | send money @user <amount>"
     }
   },
+
   onStart: async ({ message, event, args, usersData }) => {
     const uid = event.senderID;
     const user = await usersData.get(uid);
 
+    // ✅ SAFE INIT (IMPORTANT FIX)
+    if (!user.money) user.money = 0;
     if (!user.bank) user.bank = 0;
     if (!user.loan) user.loan = 0;
     if (!user.lastInterest) user.lastInterest = 0;
@@ -38,13 +41,13 @@ module.exports = {
     if (!action) {
       return message.reply(
 `╭─ [🏦 𝐇𝐈𝐍𝐀𝐓𝐀 𝐁𝐀𝐍𝐊 🏦]
-╰‣ 𝐁𝐚𝐥𝐚𝐧𝐜𝐞
-╰‣ 𝐃𝐞𝐩𝐨𝐬𝐢𝐭
-╰‣ 𝐖𝐢𝐭𝐡𝐝𝐫𝐚𝐰
-╰‣ 𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭
-╰‣ 𝐋𝐨𝐚𝐧
-╰‣ 𝐏𝐚𝐲𝐋𝐨𝐚𝐧
-╰‣ 𝐑𝐮𝐥𝐞𝐬
+╰‣ Balance
+╰‣ Deposit
+╰‣ Withdraw
+╰‣ Interest
+╰‣ Loan
+╰‣ PayLoan
+╰‣ Send Money
 
 • ${name}`
       );
@@ -53,8 +56,9 @@ module.exports = {
     // BALANCE
     if (action === "balance") {
       return message.reply(
-`╭─ [🏦 𝐇𝐈𝐍𝐀𝐓𝐀 𝐁𝐀𝐍𝐊 🏦]
-╰──‣ 𝐁𝐚𝐛𝐲, 𝐲𝐨𝐮𝐫 𝐛𝐚𝐧𝐤 𝐛𝐚𝐥𝐚𝐧𝐜𝐞: $${formatNumber(user.bank)}
+`🏦 Bank Balance
+
+💰 ${formatNumber(user.bank)}
 
 • ${name}`
       );
@@ -65,10 +69,10 @@ module.exports = {
       const amount = parseInt(args[1]);
 
       if (isNaN(amount) || amount <= 0)
-        return message.reply("❌ Enter a valid amount.");
+        return message.reply("❌ Invalid amount.");
 
       if (user.money < amount)
-        return message.reply("❌ You don't have enough money.");
+        return message.reply("❌ Not enough money.");
 
       user.money -= amount;
       user.bank += amount;
@@ -76,10 +80,10 @@ module.exports = {
       await usersData.set(uid, user);
 
       return message.reply(
-`🏦 Deposit Successful
+`🏦 Deposit Done
 
-💵 Deposited: $${formatNumber(amount)}
-🏦 Bank: $${formatNumber(user.bank)}`
+💵 +${formatNumber(amount)}
+🏦 Bank: ${formatNumber(user.bank)}`
       );
     }
 
@@ -88,7 +92,7 @@ module.exports = {
       const amount = parseInt(args[1]);
 
       if (isNaN(amount) || amount <= 0)
-        return message.reply("❌ Enter a valid amount.");
+        return message.reply("❌ Invalid amount.");
 
       if (user.bank < amount)
         return message.reply("❌ Not enough bank balance.");
@@ -99,10 +103,10 @@ module.exports = {
       await usersData.set(uid, user);
 
       return message.reply(
-`🏦 Withdraw Successful
+`🏦 Withdraw Done
 
-💵 Withdrawn: $${formatNumber(amount)}
-🏦 Bank: $${formatNumber(user.bank)}`
+💵 +${formatNumber(amount)}
+🏦 Bank: ${formatNumber(user.bank)}`
       );
     }
 
@@ -111,18 +115,10 @@ module.exports = {
       const cooldown = 24 * 60 * 60 * 1000;
 
       if (Date.now() - user.lastInterest < cooldown) {
-        const left = cooldown - (Date.now() - user.lastInterest);
-        const hours = Math.floor(left / 3600000);
-
-        return message.reply(
-          `⏳ You can claim interest again in ${hours} hour(s).`
-        );
+        return message.reply("⏳ Wait for next interest (24h)");
       }
 
       const interest = Math.floor(user.bank * 0.05);
-
-      if (interest <= 0)
-        return message.reply("❌ Deposit money first.");
 
       user.bank += interest;
       user.lastInterest = Date.now();
@@ -130,10 +126,10 @@ module.exports = {
       await usersData.set(uid, user);
 
       return message.reply(
-`🏦 Interest Claimed
+`🏦 Interest Added
 
-💰 Interest: $${formatNumber(interest)}
-🏦 New Balance: $${formatNumber(user.bank)}`
+💰 +${formatNumber(interest)}
+🏦 Bank: ${formatNumber(user.bank)}`
       );
     }
 
@@ -142,7 +138,7 @@ module.exports = {
       const amount = parseInt(args[1]);
 
       if (isNaN(amount) || amount <= 0)
-        return message.reply("❌ Enter a valid amount.");
+        return message.reply("❌ Invalid amount.");
 
       user.loan += amount;
       user.money += amount;
@@ -152,8 +148,8 @@ module.exports = {
       return message.reply(
 `💳 Loan Approved
 
-💰 Loan: $${formatNumber(amount)}
-📋 Total Loan: $${formatNumber(user.loan)}`
+💰 +${formatNumber(amount)}
+📋 Loan: ${formatNumber(user.loan)}`
       );
     }
 
@@ -162,42 +158,76 @@ module.exports = {
       const amount = parseInt(args[1]);
 
       if (isNaN(amount) || amount <= 0)
-        return message.reply("❌ Enter a valid amount.");
-
-      if (user.money < amount)
-        return message.reply("❌ Not enough wallet balance.");
+        return message.reply("❌ Invalid amount.");
 
       if (user.loan <= 0)
         return message.reply("✅ No active loan.");
 
-      user.money -= amount;
-      user.loan -= amount;
+      if (user.money < amount)
+        return message.reply("❌ Not enough money.");
 
-      if (user.loan < 0)
-        user.loan = 0;
+      user.money -= amount;
+      user.loan = Math.max(0, user.loan - amount);
 
       await usersData.set(uid, user);
 
       return message.reply(
-`✅ Loan Payment Successful
+`💳 Loan Paid
 
-💵 Paid: $${formatNumber(amount)}
-📋 Remaining Loan: $${formatNumber(user.loan)}`
+💰 -${formatNumber(amount)}
+📋 Remaining Loan: ${formatNumber(user.loan)}`
+      );
+    }
+
+    // 💸 SEND MONEY (FIXED)
+    if (action === "send" && args[1] === "money") {
+      const mention = Object.keys(event.mentions || {});
+      const amount = parseInt(args[2]);
+
+      if (mention.length === 0)
+        return message.reply("❌ Tag someone.");
+
+      if (isNaN(amount) || amount <= 0)
+        return message.reply("❌ Invalid amount.");
+
+      const receiverID = mention[0];
+
+      if (receiverID === uid)
+        return message.reply("❌ Cannot send to yourself.");
+
+      const receiver = await usersData.get(receiverID);
+
+      if (user.money < amount)
+        return message.reply("❌ Not enough balance.");
+
+      user.money -= amount;
+      receiver.money = (receiver.money || 0) + amount;
+
+      await usersData.set(uid, user);
+      await usersData.set(receiverID, receiver);
+
+      return message.reply(
+`💸 Money Sent
+
+👤 To: ${event.mentions[receiverID]}
+💰 Amount: ${formatNumber(amount)}
+
+🏦 Your Balance: ${formatNumber(user.money)}`
       );
     }
 
     // RULES
     if (action === "rules") {
       return message.reply(
-`🏦 HINATA BANK RULES
+`🏦 BANK RULES
 
-• Interest: 5% every 24 hours
-• Deposit money for interest
+• Interest 5% per 24h
+• Deposit earns interest
 • Loan must be repaid manually
-• Withdraw anytime`
+• Transfer allowed`
       );
     }
 
-    return message.reply("❌ Invalid option.");
+    return message.reply("❌ Invalid command.");
   }
 };
