@@ -10,7 +10,6 @@ module.exports = {
       en: "{pn} | balance | deposit <amount> | withdraw <amount> | interest | loan <amount> | payloan <amount>"
     }
   },
-
   onStart: async ({ message, event, args, usersData }) => {
     const uid = event.senderID;
     const user = await usersData.get(uid);
