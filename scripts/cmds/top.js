@@ -10,27 +10,78 @@ if (fs.existsSync(fontPath)) {
 module.exports = {
   config: {
     name: "top",
-    version: "3.6",
+    version: "5.0",
     author: "ANAS",
     role: 0,
-    shortDescription: { en: "Top Richest with Profile Pictures" },
-    longDescription: { en: "Top 15 richest users with advanced number format." },
-    category: "group",
-    guide: { en: "{pn}" }
+    category: "economy",
+    guide: "{pn}"
   },
 
-  onStart: async function ({ api, event, usersData, message }) {
-    const allUsers = await usersData.getAll();
-    const topUsers = allUsers
-      .sort((a, b) => (b.money || 0) - (a.money || 0))
+  onStart: async function ({ event, usersData, message }) {
+    const users = await usersData.getAll();
+
+    const top = users
+      .filter(u => typeof u.money === "number")
+      .sort((a, b) => b.money - a.money)
       .slice(0, 15);
 
-    const width = 900;
-    const height = 1350;
+    const width = 1100;
+    const height = 1700;
+
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext("2d");
 
-    function drawRoundedRect(x, y, w, h, r) {
+    // ===== BACKGROUND (premium dark gradient) =====
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, "#050816");
+    bg.addColorStop(0.5, "#0b1b3a");
+    bg.addColorStop(1, "#050816");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+
+    // soft glow circles
+    function glowCircle(x, y, color) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 250);
+      g.addColorStop(0, color);
+      g.addColorStop(1, "transparent");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    glowCircle(200, 200, "rgba(0,255,200,0.15)");
+    glowCircle(900, 300, "rgba(255,0,150,0.12)");
+
+    // ===== TITLE =====
+    ctx.textAlign = "center";
+    ctx.font = 'bold 70px "Kalpurush", Arial';
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "#00f7ff";
+    ctx.shadowBlur = 30;
+    ctx.fillText("🏆 TOP PLAYERS 🏆", width / 2, 120);
+    ctx.shadowBlur = 0;
+
+    ctx.font = "22px Arial";
+    ctx.fillStyle = "#9adfff";
+    ctx.fillText("Leaderboard based on total balance", width / 2, 160);
+
+    // format number
+    const format = (n) => {
+      if (!n) return "0";
+      const units = [
+        [1e12, "T"],
+        [1e9, "B"],
+        [1e6, "M"],
+        [1e3, "K"]
+      ];
+      for (const [v, s] of units) {
+        if (n >= v) return (n / v).toFixed(2).replace(/\.00$/, "") + s;
+      }
+      return n.toString();
+    };
+
+    // card draw function
+    function card(x, y, w, h, r, color) {
+      ctx.fillStyle = color;
       ctx.beginPath();
       ctx.moveTo(x + r, y);
       ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -41,115 +92,88 @@ module.exports = {
       ctx.fill();
     }
 
-    function formatNumber(num) {
-      if (!num || isNaN(num)) return "0";
+    const startY = 220;
+    const gap = 95;
 
-      const units = [
-        { v: 1e18, s: "Qi" },
-        { v: 1e15, s: "Qa" },
-        { v: 1e12, s: "T" },
-        { v: 1e9,  s: "B" },
-        { v: 1e6,  s: "M" },
-        { v: 1e3,  s: "K" }
-      ];
+    for (let i = 0; i < top.length; i++) {
+      const u = top[i];
+      const y = startY + i * gap;
 
-      for (const u of units) {
-        if (num >= u.v) {
-          return (num / u.v).toFixed(2).replace(/\.00$/, "") + u.s;
-        }
-      }
+      // premium card style
+      const bgColor =
+        i === 0 ? "rgba(255,215,0,0.12)" :
+        i === 1 ? "rgba(192,192,192,0.10)" :
+        i === 2 ? "rgba(205,127,50,0.10)" :
+        "rgba(255,255,255,0.05)";
 
-      return num.toString();
-    }
+      card(80, y, width - 160, 75, 18, bgColor);
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, "#010014");
-    gradient.addColorStop(0.5, "#0d0d5c");
-    gradient.addColorStop(1, "#0081a7");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
+      // left rank badge
+      const badge =
+        i === 0 ? "🥇" :
+        i === 1 ? "🥈" :
+        i === 2 ? "🥉" :
+        `#${i + 1}`;
 
-    ctx.shadowColor = "rgba(251, 197, 49, 0.5)";
-    ctx.shadowBlur = 15;
-    ctx.fillStyle = "#fbc531";
-    ctx.font = 'bold 65px "Kalpurush", "Arial"';
-    ctx.textAlign = "center";
-    ctx.fillText("🏆 TOP RICHEST USERS 🏆", width / 2, 100);
-    ctx.shadowBlur = 0;
-
-    for (let i = 0; i < topUsers.length; i++) {
-      const user = topUsers[i];
-      const yPos = 200 + i * 75;
-
-      if (i === 0) ctx.fillStyle = "rgba(255, 215, 0, 0.2)";
-      else if (i === 1) ctx.fillStyle = "rgba(192, 192, 192, 0.2)";
-      else if (i === 2) ctx.fillStyle = "rgba(205, 127, 50, 0.2)";
-      else ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-
-      drawRoundedRect(50, yPos - 50, width - 100, 65, 12);
-
-      let textXStart = 100;
-      let nameXStart = 150;
-
-      if (i < 3) {
-        try {
-          const avatarUrl = `https://graph.facebook.com/${user.userID}/picture?height=100&width=100`;
-          const avatar = await loadImage(avatarUrl);
-
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(130, yPos - 18, 27, 0, Math.PI * 2);
-          ctx.fillStyle = "#ffffff";
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(130, yPos - 18, 25, 0, Math.PI * 2);
-          ctx.closePath();
-          ctx.clip();
-          ctx.drawImage(avatar, 105, yPos - 43, 50, 50);
-          ctx.restore();
-
-          nameXStart = 205;
-          textXStart = 65;
-        } catch (e) {}
-      }
-
-      const icon = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
-
+      ctx.font = "bold 30px Arial";
+      ctx.fillStyle = "#fff";
       ctx.textAlign = "left";
+      ctx.fillText(badge, 110, y + 48);
+
+      // avatar for ALL users (important upgrade)
+      try {
+        const avatar = await loadImage(
+          `https://graph.facebook.com/${u.userID}/picture?width=120&height=120`
+        );
+
+        // glow ring for top 3
+        ctx.beginPath();
+        ctx.arc(210, y + 38, 32, 0, Math.PI * 2);
+        ctx.strokeStyle =
+          i === 0 ? "#ffd700" :
+          i === 1 ? "#c0c0c0" :
+          i === 2 ? "#cd7f32" :
+          "#ffffff33";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // avatar clip
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(210, y + 38, 30, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(avatar, 180, y + 8, 60, 60);
+        ctx.restore();
+
+      } catch {}
+
+      // name
+      ctx.font = 'bold 28px "Kalpurush", Arial';
       ctx.fillStyle = "#ffffff";
-      ctx.font = 'bold 30px "Arial"';
-      ctx.fillText(icon, textXStart, yPos - 10);
+      ctx.fillText((u.name || "Unknown").slice(0, 18), 260, y + 48);
 
-      ctx.shadowColor = "black";
-      ctx.shadowBlur = 4;
-      ctx.font = 'bold 32px "Kalpurush", "Arial"';
-      ctx.fillText((user.name || "Unknown").substring(0, 20), nameXStart, yPos - 10);
-
-      ctx.shadowBlur = 2;
+      // money right side
       ctx.textAlign = "right";
-      ctx.fillStyle = "#00ff00";
-      ctx.font = 'bold 30px "Arial"';
-      ctx.fillText(`${formatNumber(user.money || 0)} ৳`, width - 85, yPos - 10);
-
-      ctx.shadowBlur = 0;
+      ctx.font = "bold 28px Arial";
+      ctx.fillStyle = "#00ffcc";
+      ctx.fillText(`${format(u.money || 0)} ৳`, width - 110, y + 48);
     }
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.font = '22px "Arial"';
+    // footer
     ctx.textAlign = "center";
-    ctx.fillText("Powered by xalman •", width / 2, height - 40);
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#6ee7ff";
+    ctx.fillText("🔥 Powered by Advanced Leaderboard System", width / 2, height - 40);
 
-    const cachePath = path.join(__dirname, "cache");
-    if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath);
+    const cache = path.join(__dirname, "cache");
+    if (!fs.existsSync(cache)) fs.mkdirSync(cache);
 
-    const imagePath = path.join(cachePath, `top_${event.senderID}.png`);
-    fs.writeFileSync(imagePath, canvas.toBuffer("image/png"));
+    const file = path.join(cache, `top_${event.senderID}.png`);
+    fs.writeFileSync(file, canvas.toBuffer("image/png"));
 
     return message.reply({
-      body: "🌟 TOP 15 BALANCE LIST 🌟",
-      attachment: fs.createReadStream(imagePath)
-    }, () => {
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
-    });
+      body: "🏆 TOP 15 LEADERBOARD GENERATED",
+      attachment: fs.createReadStream(file)
+    }, () => fs.unlinkSync(file));
   }
 };
