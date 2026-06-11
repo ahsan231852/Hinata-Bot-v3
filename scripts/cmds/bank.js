@@ -1,7 +1,7 @@
 module.exports = {
   config: {
     name: "bank",
-    version: "4.0",
+    version: "5.0",
     author: "ANAS + ChatGPT",
     role: 0,
     countDown: 5,
@@ -10,15 +10,14 @@ module.exports = {
 
   onStart: async ({ message, event, args, usersData }) => {
     const uid = event.senderID;
-    const user = await usersData.get(uid);
 
-    // ✅ SAFE INIT (NEVER BREAK)
-    if (!user.money) user.money = 0;
-    if (!user.bank) user.bank = 0;
-    if (!user.loan) user.loan = 0;
-    if (!user.lastInterest) user.lastInterest = 0;
+    // 🔥 SAFE GET (Hinata v3 compatible)
+    let money = await usersData.get(uid, "money") || 0;
+    let bank = await usersData.get(uid, "bank") || 0;
+    let loan = await usersData.get(uid, "loan") || 0;
+    let lastInterest = await usersData.get(uid, "lastInterest") || 0;
 
-    const name = user.name || "User";
+    const name = await usersData.get(uid, "name") || "User";
 
     // 🔥 FORMAT NUMBER
     const format = (n) => {
@@ -33,7 +32,7 @@ module.exports = {
       return num.toFixed(1).replace(/\.0$/, "") + u[i];
     };
 
-    // 🔥 K/M/B SUPPORT
+    // 🔥 PARSE K/M/B
     const parseAmount = (v) => {
       if (!v) return 0;
       v = v.toLowerCase();
@@ -43,7 +42,6 @@ module.exports = {
       return parseInt(v) || 0;
     };
 
-    // 🔥 SMART INPUT HANDLING
     const command = (args[0] || "").toLowerCase();
     const sub = (args[1] || "").toLowerCase();
 
@@ -62,16 +60,17 @@ module.exports = {
       );
     }
 
-    // ================= BALANCE (SMART FIX) =================
+    // ================= BALANCE =================
     if (
       command === "bal" ||
       command === "balance" ||
       (command === "bank" && (sub === "bal" || sub === "balance"))
     ) {
       return message.reply(
-`>🎀 ${name}
+`╭─ [🏦 𝐇𝐈𝐍𝐀𝐓𝐀 𝐁𝐀𝐍𝐊 🏦]
+╰──‣ 𝐁𝐚𝐛𝐲, 𝐲𝐨𝐮𝐫 𝐛𝐚𝐧𝐤 𝐛𝐚𝐥𝐚𝐧𝐜𝐞: $${format(bank)}
 
-𝐁𝐚𝐛𝐲, 𝐘𝐨𝐮𝐫 𝐁𝐚𝐥𝐚𝐧𝐜𝐞: $${format(user.bank)}`
+• ${name}`
       );
     }
 
@@ -82,19 +81,20 @@ module.exports = {
       if (amount <= 0)
         return message.reply("❌ Invalid amount.");
 
-      if (user.money < amount)
+      if (money < amount)
         return message.reply("❌ Not enough money.");
 
-      user.money -= amount;
-      user.bank += amount;
+      money -= amount;
+      bank += amount;
 
-      await usersData.set(uid, user);
+      await usersData.set(uid, "money", money);
+      await usersData.set(uid, "bank", bank);
 
       return message.reply(
-`🏦 Deposit Done
+`🏦 Deposit Successful
 
 💵 +${format(amount)}
-🏦 Bank: ${format(user.bank)}`
+🏦 Bank: ${format(bank)}`
       );
     }
 
@@ -105,19 +105,20 @@ module.exports = {
       if (amount <= 0)
         return message.reply("❌ Invalid amount.");
 
-      if (user.bank < amount)
+      if (bank < amount)
         return message.reply("❌ Not enough bank balance.");
 
-      user.bank -= amount;
-      user.money += amount;
+      bank -= amount;
+      money += amount;
 
-      await usersData.set(uid, user);
+      await usersData.set(uid, "money", money);
+      await usersData.set(uid, "bank", bank);
 
       return message.reply(
-`🏦 Withdraw Done
+`🏦 Withdraw Successful
 
 💵 +${format(amount)}
-🏦 Bank: ${format(user.bank)}`
+🏦 Bank: ${format(bank)}`
       );
     }
 
@@ -125,21 +126,22 @@ module.exports = {
     if (command === "interest" || (command === "bank" && sub === "interest")) {
       const cooldown = 24 * 60 * 60 * 1000;
 
-      if (Date.now() - user.lastInterest < cooldown)
+      if (Date.now() - lastInterest < cooldown)
         return message.reply("⏳ Wait 24 hours.");
 
-      const interest = Math.floor(user.bank * 0.05);
+      const interest = Math.floor(bank * 0.05);
 
-      user.bank += interest;
-      user.lastInterest = Date.now();
+      bank += interest;
+      lastInterest = Date.now();
 
-      await usersData.set(uid, user);
+      await usersData.set(uid, "bank", bank);
+      await usersData.set(uid, "lastInterest", lastInterest);
 
       return message.reply(
 `🏦 Interest Added
 
 💰 +${format(interest)}
-🏦 Bank: ${format(user.bank)}`
+🏦 Bank: ${format(bank)}`
       );
     }
 
@@ -150,16 +152,17 @@ module.exports = {
       if (amount <= 0)
         return message.reply("❌ Invalid amount.");
 
-      user.loan += amount;
-      user.money += amount;
+      loan += amount;
+      money += amount;
 
-      await usersData.set(uid, user);
+      await usersData.set(uid, "loan", loan);
+      await usersData.set(uid, "money", money);
 
       return message.reply(
 `💳 Loan Approved
 
 💰 +${format(amount)}
-📋 Loan: ${format(user.loan)}`
+📋 Loan: ${format(loan)}`
       );
     }
 
@@ -170,22 +173,23 @@ module.exports = {
       if (amount <= 0)
         return message.reply("❌ Invalid amount.");
 
-      if (user.loan <= 0)
+      if (loan <= 0)
         return message.reply("✅ No loan.");
 
-      if (user.money < amount)
+      if (money < amount)
         return message.reply("❌ Not enough money.");
 
-      user.money -= amount;
-      user.loan = Math.max(0, user.loan - amount);
+      money -= amount;
+      loan = Math.max(0, loan - amount);
 
-      await usersData.set(uid, user);
+      await usersData.set(uid, "money", money);
+      await usersData.set(uid, "loan", loan);
 
       return message.reply(
 `💳 Loan Paid
 
 💰 -${format(amount)}
-📋 Remaining: ${format(user.loan)}`
+📋 Remaining: ${format(loan)}`
       );
     }
 
