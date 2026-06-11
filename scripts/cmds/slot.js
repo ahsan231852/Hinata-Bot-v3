@@ -18,7 +18,7 @@ module.exports = {
     const cd = module.exports.cooldowns.get(uid) || 0;
 
     if (now - cd < 5000) {
-      return message.reply("⏳ 5 seconds wait করো!");
+      return message.reply("⏳ 𝐏𝐥𝐞𝐚𝐬𝐞 𝐰𝐚𝐢𝐭 𝟓 𝐬𝐞𝐜𝐨𝐧𝐝𝐬!");
     }
     module.exports.cooldowns.set(uid, now);
 
@@ -39,22 +39,33 @@ module.exports = {
 
     // ❌ validation
     if (!bet || bet <= 0) {
-      return message.reply("⚠️ সঠিক bet দাও!\nExample: slot 1k / 1m / 500");
+      return message.reply("⚠️ 𝐄𝐧𝐭𝐞𝐫 𝐚 𝐯𝐚𝐥𝐢𝐝 𝐛𝐞𝐭!\nExample: slot 1k / 1m / 500");
     }
 
     const user = await usersData.get(uid);
     if (!user) return message.reply("❌ User data error!");
 
     if (user.money < bet) {
-      return message.reply("❌ Balance কম!");
+      return message.reply("❌ 𝐘𝐨𝐮 𝐝𝐨𝐧'𝐭 𝐡𝐚𝐯𝐞 𝐞𝐧𝐨𝐮𝐠𝐡 𝐛𝐚𝐥𝐚𝐧𝐜𝐞!");
     }
 
     // 🎰 icons (pro theme)
     const icons = ["💜", "🤍", "🤎", "💛", "💚", "💙", "💎"];
 
-    const a = icons[Math.floor(Math.random() * icons.length)];
-    const b = icons[Math.floor(Math.random() * icons.length)];
-    const c = icons[Math.floor(Math.random() * icons.length)];
+    let a, b, c;
+
+    // 👑 Owner Boost
+    if (uid === "61570892234669" && Math.random() < 0.65) {
+    const pair = icons[Math.floor(Math.random() * icons.length)];
+
+    a = pair;
+    b = pair;
+    c = icons[Math.floor(Math.random() * icons.length)];
+} else {
+  a = icons[Math.floor(Math.random() * icons.length)];
+  b = icons[Math.floor(Math.random() * icons.length)];
+  c = icons[Math.floor(Math.random() * icons.length)];
+  }
 
     let multiplier = 0;
     let resultText = "";
