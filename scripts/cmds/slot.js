@@ -1,7 +1,7 @@
 module.exports = {
   config: {
     name: "slot",
-    version: "3.0",
+    version: "4.0",
     author: "ANAS",
     role: 0,
     category: "game",
@@ -12,7 +12,6 @@ module.exports = {
 
   onStart: async ({ message, event, args, usersData }) => {
     const uid = event.senderID;
-    let bet = parseInt(args[0]);
 
     // ⏳ cooldown
     const now = Date.now();
@@ -23,21 +22,25 @@ module.exports = {
     }
     module.exports.cooldowns.set(uid, now);
 
-    // ❌ validation
-    if (isNaN(bet) || bet <= 0) {
-      return message.reply("⚠️ সঠিক bet দাও!\nExample: slot 1k");
-    }
+    // 💰 BET PARSER (FIXED 1k / 1m / 1b / 2.5m)
+    const parseBet = (v) => {
+      if (!v) return 0;
 
-    // 💰 support K/M/B
-    const parse = (v) => {
-      v = v.toString().toLowerCase();
+      v = v.toString().toLowerCase().replace(/\s/g, "");
+
       if (v.endsWith("k")) return parseFloat(v) * 1000;
       if (v.endsWith("m")) return parseFloat(v) * 1000000;
       if (v.endsWith("b")) return parseFloat(v) * 1000000000;
-      return parseInt(v);
+
+      return Number(v) || 0;
     };
 
-    bet = parse(bet);
+    const bet = parseBet(args[0]);
+
+    // ❌ validation
+    if (!bet || bet <= 0) {
+      return message.reply("⚠️ সঠিক bet দাও!\nExample: slot 1k / 1m / 500");
+    }
 
     const user = await usersData.get(uid);
     if (!user) return message.reply("❌ User data error!");
@@ -46,7 +49,7 @@ module.exports = {
       return message.reply("❌ Balance কম!");
     }
 
-    // 🎰 icons
+    // 🎰 icons (pro theme)
     const icons = ["💜", "🤍", "🤎", "💛", "💚", "💙", "💎"];
 
     const a = icons[Math.floor(Math.random() * icons.length)];
@@ -80,9 +83,8 @@ module.exports = {
       resultText = "❌ 𝐘𝐎𝐔 𝐋𝐎𝐒𝐓";
     }
 
-    let winAmount = bet * multiplier;
+    const winAmount = bet * multiplier;
 
-    // 💾 update balance
     if (multiplier > 0) {
       user.money += winAmount;
     } else {
@@ -91,7 +93,7 @@ module.exports = {
 
     await usersData.set(uid, user);
 
-    // 💰 format function
+    // 💰 FORMAT
     const format = (n) => {
       if (!n) return "0";
       let num = Number(n);
@@ -104,7 +106,7 @@ module.exports = {
       return num.toFixed(1).replace(/\.0$/, "") + u[i];
     };
 
-    // 📊 win rate (fake simple)
+    // 🎯 WIN RATE
     const winRate = Math.floor(Math.random() * 60 + 20);
 
     return message.reply(
