@@ -9,110 +9,113 @@ module.exports = {
         config: {
                 name: "actor",
                 aliases: ["actorgame"],
-                version: "1.7",
+                version: "1.8",
                 author: "MahMUD",
                 countDown: 10,
                 role: 0,
                 category: "game"
         },
 
-        langs: {
-                en: {
-                        start: "🎭 Guess the actor name!",
-                        correct: "✅ Correct! +%1 coins +%2 exp",
-                        wrong: "❌ Wrong! Answer: %1",
-                        notYour: "❌ Not your game!"
-                }
-        },
-
         onReply: async function ({ api, event, Reply, usersData, getLang }) {
-                try {
-                        const { actorNames, author } = Reply;
 
-                        if (event.senderID !== author) {
-                                return api.sendMessage(getLang("notYour"), event.threadID, event.messageID);
-                        }
+                const { actorNames, author } = Reply;
 
-                        const reply = event.body.trim().toLowerCase();
-                        const userData = await usersData.get(event.senderID);
+                if (event.senderID !== author) {
+                        return api.sendMessage(getLang("notYour"), event.threadID, event.messageID);
+                }
 
-                        await api.unsendMessage(Reply.messageID);
+                const reply = event.body.trim().toLowerCase();
+                const userData = await usersData.get(event.senderID);
 
-                        const isCorrect = actorNames.some(name =>
-                                reply.includes(name.toLowerCase())
+                // 🔥 GAME LIMIT SYSTEM
+                userData.tasks = userData.tasks || {};
+                userData.tasks.actor = userData.tasks.actor || 0;
+
+                if (userData.tasks.actor >= 10) {
+                        return api.sendMessage(
+                                "❌ You already played 10 times!\n🎁 Bonus 1M added to your account!",
+                                event.threadID,
+                                event.messageID
                         );
+                }
 
-                        const getCoin = 500;
-                        const getExp = 121;
+                await api.unsendMessage(Reply.messageID);
 
-                        if (isCorrect) {
-                                userData.money += getCoin;
-                                userData.exp += getExp;
+                const isCorrect = actorNames.some(name =>
+                        reply.includes(name.toLowerCase())
+                );
 
-                                // 🔥 DAILY TASK COUNTER FIX
-                                userData.tasks = userData.tasks || {};
-                                userData.tasks.actor = (userData.tasks.actor || 0) + 1;
+                const getCoin = 500;
+                const getExp = 121;
 
-                                await usersData.set(event.senderID, userData);
+                if (isCorrect) {
+                        userData.money += getCoin;
+                        userData.exp += getExp;
 
-                                return api.sendMessage(
-                                        getLang("correct", getCoin, getExp),
-                                        event.threadID,
-                                        event.messageID
-                                );
-                        } else {
-                                return api.sendMessage(
-                                        getLang("wrong", actorNames.join(", ")),
-                                        event.threadID,
-                                        event.messageID
-                                );
+                        // 🔥 COUNT +1
+                        userData.tasks.actor += 1;
+
+                        // 🎁 10 TIMES BONUS
+                        if (userData.tasks.actor === 10) {
+                                userData.money += 1000000;
                         }
 
-                } catch (err) {
-                        console.log("Reply Error:", err);
-                        return api.sendMessage("❌ Reply error occurred!", event.threadID);
+                        await usersData.set(event.senderID, userData);
+
+                        return api.sendMessage(
+                                getLang("correct", getCoin, getExp),
+                                event.threadID,
+                                event.messageID
+                        );
+                } else {
+                        return api.sendMessage(
+                                getLang("wrong", actorNames.join(", ")),
+                                event.threadID,
+                                event.messageID
+                        );
                 }
         },
 
         onStart: async function ({ api, event, getLang }) {
                 try {
                         const apiUrl = await baseApiUrl();
-
-                        const res = await axios.get(`${apiUrl}/api/actor`);
-                        const { name, imgurLink } = res.data.actor;
+                        const response = await axios.get(`${apiUrl}/api/actor`);
+                        const { name, imgurLink } = response.data.actor;
 
                         const actorNames = Array.isArray(name) ? name : [name];
 
-                        const img = await axios({
-                                url: imgurLink,
+                        const imageStream = await axios({
                                 method: "GET",
+                                url: imgurLink,
                                 responseType: "stream"
                         });
 
-                        const msg = await api.sendMessage(
+                        return api.sendMessage(
                                 {
                                         body: getLang("start"),
-                                        attachment: img.data
+                                        attachment: imageStream.data
                                 },
-                                event.threadID
+                                event.threadID,
+                                (err, info) => {
+                                        if (err) return;
+
+                                        global.GoatBot.onReply.set(info.messageID, {
+                                                commandName: this.config.name,
+                                                messageID: info.messageID,
+                                                author: event.senderID,
+                                                actorNames
+                                        });
+
+                                        setTimeout(() => {
+                                                api.unsendMessage(info.messageID);
+                                        }, 40000);
+                                },
+                                event.messageID
                         );
 
-                        if (!global.GoatBot.onReply) global.GoatBot.onReply = new Map();
-
-                        global.GoatBot.onReply.set(msg.messageID, {
-                                commandName: this.config.name,
-                                messageID: msg.messageID,
-                                author: event.senderID,
-                                actorNames
-                        });
-
-                        setTimeout(() => {
-                                api.unsendMessage(msg.messageID);
-                        }, 40000);
-
-                } catch (err) {
-                        console.log("Actor Start Error:", err);
-                        return api.sendMessage("❌ Error starting actor game!", event.threadID);
+                } catch (error) {
+                        console.log(error);
+                        return api.sendMessage("❌ Error starting game!", event.threadID);
                 }
         }
 };
