@@ -25,7 +25,7 @@ module.exports = {
     }
 
     // reward (10m)
-    const reward = 10_000_000;
+    const reward = 10_000_00;
 
     // add money
     userData.money = (userData.money || 0) + reward;
