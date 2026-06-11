@@ -1,8 +1,8 @@
 module.exports = {
   config: {
     name: "slot",
-    version: "2.0",
-    author: "advanced",
+    version: "3.0",
+    author: "ANAS",
     role: 0,
     category: "game",
     guide: "{pn} <bet>"
@@ -12,9 +12,9 @@ module.exports = {
 
   onStart: async ({ message, event, args, usersData }) => {
     const uid = event.senderID;
-    const bet = parseInt(args[0]);
+    let bet = parseInt(args[0]);
 
-    // ⏳ cooldown (5 sec)
+    // ⏳ cooldown
     const now = Date.now();
     const cd = module.exports.cooldowns.get(uid) || 0;
 
@@ -25,8 +25,19 @@ module.exports = {
 
     // ❌ validation
     if (isNaN(bet) || bet <= 0) {
-      return message.reply("⚠️ সঠিক bet দাও!\nExample: slot 100");
+      return message.reply("⚠️ সঠিক bet দাও!\nExample: slot 1k");
     }
+
+    // 💰 support K/M/B
+    const parse = (v) => {
+      v = v.toString().toLowerCase();
+      if (v.endsWith("k")) return parseFloat(v) * 1000;
+      if (v.endsWith("m")) return parseFloat(v) * 1000000;
+      if (v.endsWith("b")) return parseFloat(v) * 1000000000;
+      return parseInt(v);
+    };
+
+    bet = parse(bet);
 
     const user = await usersData.get(uid);
     if (!user) return message.reply("❌ User data error!");
@@ -35,52 +46,76 @@ module.exports = {
       return message.reply("❌ Balance কম!");
     }
 
-    const icons = ["🍒", "🍋", "🍊", "🍇", "7️⃣", "💎"];
+    // 🎰 icons
+    const icons = ["💜", "🤍", "🤎", "💛", "💚", "💙", "💎"];
 
     const a = icons[Math.floor(Math.random() * icons.length)];
     const b = icons[Math.floor(Math.random() * icons.length)];
     const c = icons[Math.floor(Math.random() * icons.length)];
 
-    let text = `🎰 | ${a} | ${b} | ${c} |\n`;
-
     let multiplier = 0;
+    let resultText = "";
 
     // 💎 JACKPOT
     if (a === "💎" && b === "💎" && c === "💎") {
       multiplier = 10;
-      text += "💎 JACKPOT!!!";
+      resultText = "💎 𝐉𝐀𝐂𝐊𝐏𝐎𝐓 !!!";
     }
 
     // 🎉 BIG WIN
     else if (a === b && b === c) {
       multiplier = 5;
-      text += "🎉 BIG WIN!";
+      resultText = "🎉 𝐁𝐈𝐆 𝐖𝐈𝐍 !!";
     }
 
     // 😊 SMALL WIN
     else if (a === b || b === c || a === c) {
       multiplier = 2;
-      text += "😊 Small Win!";
+      resultText = "😊 𝐒𝐌𝐀𝐋𝐋 𝐖𝐈𝐍";
     }
 
     // ❌ LOSE
     else {
       multiplier = 0;
-      text += "❌ You Lost!";
+      resultText = "❌ 𝐘𝐎𝐔 𝐋𝐎𝐒𝐓";
     }
 
-    let result = bet * multiplier;
+    let winAmount = bet * multiplier;
 
+    // 💾 update balance
     if (multiplier > 0) {
-      user.money += result;
-      text += `\n+${result} coins`;
+      user.money += winAmount;
     } else {
       user.money -= bet;
-      text += `\n-${bet} coins`;
     }
 
     await usersData.set(uid, user);
 
-    return message.reply(text);
+    // 💰 format function
+    const format = (n) => {
+      if (!n) return "0";
+      let num = Number(n);
+      const u = ["", "K", "M", "B", "T"];
+      let i = 0;
+      while (num >= 1000 && i < u.length - 1) {
+        num /= 1000;
+        i++;
+      }
+      return num.toFixed(1).replace(/\.0$/, "") + u[i];
+    };
+
+    // 📊 win rate (fake simple)
+    const winRate = Math.floor(Math.random() * 60 + 20);
+
+    return message.reply(
+`>🎰 𝐒𝐋𝐎𝐓 𝐆𝐀𝐌𝐄
+
+• 𝐑𝐞𝐬𝐮𝐥𝐭: [ ${a} | ${b} | ${c} ]
+• ${resultText}
+
+• 𝐁𝐚𝐛𝐲, 𝐘𝐨𝐮 ${multiplier > 0 ? "𝐖𝐨𝐧" : "𝐋𝐨𝐬𝐭"} $${format(multiplier > 0 ? winAmount : bet)}
+
+🎯 𝐖𝐢𝐧 𝐑𝐚𝐭𝐞: ${winRate}%`
+    );
   }
 };
